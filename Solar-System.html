@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="textures/blue_marble.png" type="image/png">
+    <title>Eyes on Solar System</title>
+    <style>
+        /* General Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+        }
+
+        /* --- LOADING SCREEN STYLES --- */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease-in-out;
+            opacity: 1;
+        }
+
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        /* --- NEW SOLAR SYSTEM LOADER --- */
+        .solar-system-loader {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin-bottom: 10px;
+        }
+
+        .sun {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: #fdd835;
+            border-radius: 50%;
+            box-shadow: 0 0 25px #fdd835;
+        }
+        
+        .orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: spin linear infinite;
+        }
+        
+        .orbit .planet {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50%;
+        }
+
+        .orbit1 {
+            width: 60px; height: 60px;
+            margin-left: -30px; margin-top: -30px;
+            animation-duration: 4s;
+        }
+        .orbit1 .planet { width: 6px; height: 6px; top: -3px; background: #b0bec5; }
+
+        .orbit2 {
+            width: 100px; height: 100px;
+            margin-left: -50px; margin-top: -50px;
+            animation-duration: 7s;
+        }
+        .orbit2 .planet { width: 9px; height: 9px; top: -4.5px; background: #81d4fa; }
+        
+        .orbit3 {
+            width: 140px; height: 140px;
+            margin-left: -70px; margin-top: -70px;
+            animation-duration: 10s;
+        }
+        .orbit3 .planet { width: 7px; height: 7px; top: -3.5px; background: #ef5350; }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        /* --- END NEW LOADER --- */
+
+        #loading-text {
+            font-size: 1em;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 300;
+            color: #ffffff;
+        }
+
+        .progress-bar-container {
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 2px;
+            transition: width 0.4s ease-out;
+        }
+
+        /* Main App Containers */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            opacity: 0;
+            transition: opacity 1s ease-in;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 1s ease-in;
+        }
+
+        /* NASA-style header */
+        #header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            height: 80px;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            pointer-events: auto;
+        }
+
+        .nasa-logo {
+            width: 50px;
+            height: 50px;
+            margin-right: 20px;
+            opacity: 0.9;
+        }
+
+        #title {
+            font-size: 1.8em;
+            font-weight: 300;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-left: 20px;
+            font-weight: 300;
+        }
+
+        /* NASA-style panels */
+        .panel {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px;
+            pointer-events: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .panel.hidden {
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #left-panels {
+            position: absolute;
+            left: 20px;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            max-width: 300px;
+        }
+
+        #right-panels {
+            position: absolute;
+            right: 20px;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            max-width: 300px;
+        }
+
+        .panel-title {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .panel-content {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.4;
+        }
+
+        #search-box {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            font-size: 13px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        #search-box:focus {
+            outline: none;
+            border-color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        #search-results {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .search-result {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 3px 0;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .search-result:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: #ffffff;
+            transform: translateX(5px);
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, rgba(40, 40, 40, 0.8) 0%, rgba(20, 20, 20, 0.8) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(200, 200, 200, 0.3) 100%);
+            border-color: #ffffff;
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.active {
+            background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+            border-color: #ffffff;
+            color: #000000;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+        }
+
+        /* Visibility Controls */
+        .visibility-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .planet-label {
+            color: #fff;
+            font-size: 12px;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            font-weight: 500;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 2px 6px;
+            border-radius: 3px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* NASA-style time control bar */
+        #time-control-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            padding: 20px 40px;
+            pointer-events: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            min-width: 600px;
+        }
+
+        #time-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            gap: 20px;
+        }
+
+        .time-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            animation: pulse-dot 2s infinite;
+        }
+
+        .status-dot.live {
+            background: #51cf66;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        #time-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        #time-slider {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+        }
+
+        #time-slider:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        #time-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        #time-slider:disabled::-webkit-slider-thumb {
+            background: #888;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        #time-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        #time-slider:disabled::-moz-range-thumb {
+            background: #888;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .time-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        #time-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .time-btn {
+            background: rgba(40, 40, 40, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .time-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .time-btn.active {
+            background: #ffffff;
+            border-color: #ffffff;
+            color: #000;
+            font-weight: 600;
+        }
+
+        #current-date {
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        /* API Modal - NASA style */
+        #api-key-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            pointer-events: auto;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #api-key-form {
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        #api-key-form h2 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #api-key-form p {
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        #api-key-input {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            font-size: 14px;
+            margin-bottom: 25px;
+            transition: border-color 0.3s ease;
+        }
+
+        #api-key-input:focus {
+            outline: none;
+            border-color: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        #api-key-submit {
+            background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+            border: none;
+            color: #000;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #api-key-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(255, 255, 255, 0.4);
+        }
+
+        #api-key-info {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 20px;
+        }
+
+        #api-key-info a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        #api-key-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* API Status indicator */
+        #api-status {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff6b6b;
+        }
+
+        .status-indicator.connected {
+            background: #51cf66;
+        }
+
+        /* Toggle panels button */
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-left: auto;
+        }
+
+        .menu-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            #left-panels, #right-panels { display: none; }
+            #title { font-size: 1.4em; }
+            #time-control-panel { min-width: 90%; }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">
+        <div class="loading-content">
+            <div class="solar-system-loader">
+                <div class="sun"></div>
+                <div class="orbit orbit1"><div class="planet"></div></div>
+                <div class="orbit orbit2"><div class="planet"></div></div>
+                <div class="orbit orbit3"><div class="planet"></div></div>
+            </div>
+            <p id="loading-text">INITIALIZING CONNECTION</p>
+            <div class="progress-bar-container">
+                <div id="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+    <div id="canvas-container"></div>
+
+    <div id="ui-overlay">
+        <div id="header">
+            <img src="textures/blue_marble.jpg" class="nasa-logo">
+            <div>
+                <h1 id="title">Solar System Explorer</h1>
+                <div class="subtitle">Real-Time Planetary Positions & Spacecraft Tracking</div>
+            </div>
+            <div class="header-right">
+                <button class="menu-toggle" id="toggle-panels">Hide Panels</button>
+            </div>
+        </div>
+
+        <div id="api-status">
+            <div class="status-indicator"></div>
+            <span>NASA API: Disconnected</span>
+        </div>
+
+        <div id="api-key-modal">
+            <div id="api-key-form">
+                <h2>NASA API Integration</h2>
+                <p>Connect to NASA's real-time data feeds to display accurate planetary positions and active spacecraft locations throughout the solar system.</p>
+                <input type="text" id="api-key-input" placeholder="Enter your NASA API key">
+                <button id="api-key-submit">Connect to NASA</button>
+                <div id="api-key-info">
+                    Need an API key? <a href="https://api.nasa.gov/" target="_blank">Get one free from NASA</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="left-panels">
+            <div class="panel">
+                <div class="panel-title">Object Search</div>
+                <input type="text" id="search-box" placeholder="Search planets, moons, spacecraft, comets...">
+                <div id="search-results" class="panel-content"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">View Options</div>
+                <button class="control-btn active" id="toggle-orbits">Orbital Paths</button>
+                <button class="control-btn" id="toggle-labels">Object Labels</button>
+                <button class="control-btn" id="reset-view">Reset View</button>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Object Visibility</div>
+                <div class="visibility-controls">
+                    <button class="control-btn active" id="toggle-planets">Planets</button>
+                    <button class="control-btn active" id="toggle-moons">Moons</button>
+                    <button class="control-btn active" id="toggle-spacecraft">Spacecraft</button>
+                    <button class="control-btn" id="toggle-comets">Comets</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="right-panels">
+            <div class="panel">
+                <div class="panel-title">Mission Status</div>
+                <div class="panel-content">
+                    <div style="margin-bottom: 10px;">
+                        <strong>Active Objects:</strong> <span id="object-count">Loading...</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Spacecraft:</strong> <span id="spacecraft-count">Loading...</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Comets:</strong> <span id="comet-count">Loading...</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Data Source:</strong> <span id="data-source">NASA/JPL</span>
+                    </div>
+                    <div>
+                        <strong>Last Update:</strong> <span id="last-update">Connecting...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="time-control-panel">
+            <div id="current-date">Loading current date...</div>
+
+            <div id="time-status">
+                <div class="time-indicator">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="status-text">SIMULATION</span>
+                </div>
+                <div class="time-indicator">
+                    <span id="speed-display">1 Day/sec</span>
+                </div>
+            </div>
+
+            <div id="time-slider-container">
+                <div class="time-label">Pause</div>
+                <input type="range" id="time-slider" min="0" max="6" value="1" step="1">
+                <div class="time-label">Max Speed</div>
+            </div>
+
+            <div id="time-controls">
+                <button class="time-btn active" id="sim-btn">SIM</button>
+                <button class="time-btn" id="live-btn">LIVE</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
