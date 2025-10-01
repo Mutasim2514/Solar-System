@@ -245,7 +245,8 @@
                     { name: 'Voyager 2', modelFile: 'models/Voyager Probe (B).glb', scale: 0.00000029, orbit: { semiMajorAxis: 120, eccentricity: 0.4, inclination: 30, period: 15000 } },
                     { name: 'James Webb', modelFile: 'models/James Webb Space Telescope (B).glb', scale: 0.00000165, orbit: { semiMajorAxis: 1.01, eccentricity: 0.01, inclination: 5, period: 1.02 } },
                     { name: 'Hubble', modelFile: 'models/Hubble Space Telescope (A).glb', scale: 0.0000000025, parent: 'Earth', orbit: { semiMajorAxis: hubbleOrbitRadius, period: 1.6 / 24 } },
-                    { name: 'ISS', modelFile: 'models/International Space Station (ISS) (A).glb', scale: 0.0000000855, parent: 'Earth', orbit: { semiMajorAxis: issOrbitRadius, period: 1.5 / 24 } }
+                    { name: 'ISS', modelFile: 'models/International Space Station (ISS) (A).glb', scale: 0.0000000855, parent: 'Earth', orbit: { semiMajorAxis: issOrbitRadius, period: 1.5 / 24 } },
+                    { name: 'Gateway', modelFile: 'models/Gateway Core.glb', scale: 0.00000012, parent: 'Moon', orbit: { semiMajorAxis: 0.00257, eccentricity: 0.75, inclination: 7, period: 7 } }
                 ];
 
                 for (const craft of spacecraftList) {
